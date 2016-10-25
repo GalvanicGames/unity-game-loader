@@ -12,7 +12,7 @@ namespace UnityLoader
 	{
 		#region public
 		/// <summary>
-		/// The amount of time the loader will excute before yield to a new frame.
+		/// The amount of time the loader will execute before yield to a new frame.
 		/// </summary>
 		public float secondsAllowedPerFrame = 1f / 30;
 
@@ -20,7 +20,7 @@ namespace UnityLoader
 		/// Amount of memory System.GC.GetTotalMemory() can get to before yield to a new frame.
 		/// </summary>
 		[Header("WebGL")]
-		public int memoryThresholdForYield = 128000000;
+		public int memoryThresholdForYield = DEFAULT_WEBGL_MEMORY_THRESHOLD;
 
 		/// <summary>
 		/// Verbose print out the timing of each loaded object.
@@ -50,13 +50,41 @@ namespace UnityLoader
 					if (_instance == null)
 					{
 						LogErrorFormat(
-							"No instance of {0} can be found! Add the {0} component to a GameObject.",
-							typeof(LoadManager));
+							"No instance of {0} can be found! Add the {0} component to a GameObject or invoke {0}.{1}().",
+							typeof(LoadManager),
+							((System.Action<float, int, bool>)CreateManager).Method.Name);
 					}
 				}
 
 				return _instance;
 			}
+		}
+
+		/// <summary>
+		/// Creates an instance of a LoadManager. This can be done instead of having one precreated in the scene.
+		/// </summary>
+		/// <param name="secondsAllowedPerFrame">The amount of time the loader will execute before yield to a new frame.</param>
+		/// <param name="webglMemoryThresholdForYield">Amount of memory System.GC.GetTotalMemory() can get to before yield to a new frame.</param>
+		/// <param name="verboseLogging">Verbose print out the timing of each loaded object.</param>
+		public static void CreateManager(
+			float secondsAllowedPerFrame,
+			int webglMemoryThresholdForYield = DEFAULT_WEBGL_MEMORY_THRESHOLD,
+			bool verboseLogging = false)
+		{
+			if (_instance != null)
+			{
+				LogWarningFormat(
+					"{0} already exists, called to {1} will be ignored!",
+					typeof(LoadManager),
+					System.Reflection.MethodBase.GetCurrentMethod().Name);
+
+				return;
+			}
+
+			LoadManager newLoad = (new GameObject(CREATED_NAME)).AddComponent<LoadManager>();
+			newLoad.secondsAllowedPerFrame = secondsAllowedPerFrame;
+			newLoad.memoryThresholdForYield = webglMemoryThresholdForYield;
+			newLoad.verboseLogging = verboseLogging;
 		}
 
 		/// <summary>
@@ -220,7 +248,7 @@ namespace UnityLoader
 		private int _currentStep;
 
 		private bool _loadingPaused;
-		private bool _hasFocus;
+		private bool _hasFocus = true;
 		private bool _isLoading;
 		private bool _originalRunInBackground;
 
@@ -229,8 +257,11 @@ namespace UnityLoader
 		private static LoadManager _instance;
 		private static bool _webglInitialized;
 
+		private const int DEFAULT_WEBGL_MEMORY_THRESHOLD = 128000000;
+		private const float NO_FOCUS_SECONDS_PER_FRAME = 1;
 		private const int ADDITIONAL_STEPS = 2;
 		private const string LOG_HEADER = "[Unity Loader]";
+		private const string CREATED_NAME = "[Unity Loader]";
 		private const string METHOD_INVOKE_DURING_LOADING_WARNING = "{0}.{1} invoked in the middle of a load! This isn't allowed. Invoke after the load finishes.";
 		private const string METHOD_INVOKE_NOT_LOADING_WARNING = "{0}.{1} invoked when not loading! This will be ignored.";
 
@@ -432,6 +463,11 @@ namespace UnityLoader
 			{
 				if (!Application.isEditor && !_hasFocus)
 				{
+					if (Time.realtimeSinceStartup - frameStartTime >= NO_FOCUS_SECONDS_PER_FRAME)
+					{
+						return true;
+					}
+
 					// We don't have focus, go nuts.
 					return false;
 				}
