@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using UnityGameLoader;
 
 public class AssetLoaderImplementer : MonoBehaviour, IAssetLoader
 {
