@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using UnityLoader;
+using UnityGameLoader;
 
-namespace UnityLoaderExamples
+namespace UnityGameLoaderExamples
 {
 	public class InteractWithLoadManager : MonoBehaviour
 	{

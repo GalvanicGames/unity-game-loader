@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Reflection;
 using UnityEngine.Assertions;
-using UnityLoader;
+using UnityGameLoader;
 
-namespace UnityLoaderTests
+namespace UnityGameLoaderTests
 {
 	public class TestFunctionality : MonoBehaviour
 	{

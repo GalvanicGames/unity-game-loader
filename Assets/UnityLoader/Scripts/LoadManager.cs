@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace UnityLoader
+namespace UnityGameLoader
 {
 	/// <summary>
 	/// Handles the loading process.

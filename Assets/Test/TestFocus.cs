@@ -1,45 +1,47 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UnityEngine.Assertions.Comparers;
-using UnityLoader;
+using UnityGameLoader;
 
-public class TestFocus : MonoBehaviour, IAssetLoader
+namespace UnityGameLoaderTests
 {
-	public float loadDuration = 10;
-
-	private void Start()
+	public class TestFocus : MonoBehaviour, IAssetLoader
 	{
-		LoadManager.CreateManager(1f/30);
-		LoadManager.instance.RegisterObject(gameObject);
-		LoadManager.instance.StartLoading(() => Debug.Log("Loading Complete!"));
-	}
+		public float loadDuration = 10;
 
-	private void OnApplicationFocus(bool focus)
-	{
-		Debug.Log("Focus Change: " + focus);
-	}
-
-	public IEnumerator LoadAssets()
-	{
-		float loadTime = Time.realtimeSinceStartup + loadDuration;
-
-		while (Time.realtimeSinceStartup < loadTime)
+		private void Start()
 		{
-			Debug.Log("Frame: " + Time.renderedFrameCount);
-
-			float delayTime = Time.realtimeSinceStartup + 1f / 30;
-
-			while (Time.realtimeSinceStartup < delayTime)
-			{
-				
-			}
-
-			yield return null;
+			LoadManager.CreateManager(1f / 30);
+			LoadManager.instance.RegisterObject(gameObject);
+			LoadManager.instance.StartLoading(() => Debug.Log("Loading Complete!"));
 		}
-	}
 
-	public void AssetsLoaded()
-	{
-		
+		private void OnApplicationFocus(bool focus)
+		{
+			Debug.Log("Focus Change: " + focus);
+		}
+
+		public IEnumerator LoadAssets()
+		{
+			float loadTime = Time.realtimeSinceStartup + loadDuration;
+
+			while (Time.realtimeSinceStartup < loadTime)
+			{
+				Debug.Log("Frame: " + Time.renderedFrameCount);
+
+				float delayTime = Time.realtimeSinceStartup + 1f / 30;
+
+				while (Time.realtimeSinceStartup < delayTime)
+				{
+
+				}
+
+				yield return null;
+			}
+		}
+
+		public void AssetsLoaded()
+		{
+
+		}
 	}
 }
