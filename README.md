@@ -31,6 +31,7 @@ static void CreateManager(
 ```
 
 **Singleton**
+
 Once created (or when Awake() is invoked) the Load Manager instance can be obtained through the instance property.
 
 ```csharp
@@ -131,6 +132,7 @@ void LoadEnumerator(IEnumerator enumeratorToLoad, System.Action onLoadComplete, 
 Loads a single enumerator. This allows bypassing registration if only a single enumerator needs to be loaded. This will not load any currently registered objects.
 
 **Progress**
+
 ```csharp
 float progress
 ```
