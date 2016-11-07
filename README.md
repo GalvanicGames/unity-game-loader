@@ -165,7 +165,7 @@ void IncrementLoadStep()
 
 ## IAssetLoader Interface
 
-Components that implement the IAssetLoader interface will be registered with the containing GameObject is registered with the Load Manager. The interface only has only member to implement.
+Components that implement the IAssetLoader interface will be registered with the containing GameObject is registered with the Load Manager. The interface only has only one member to implement.
 
 ```csharp
 IEnumerator LoadAssets()
