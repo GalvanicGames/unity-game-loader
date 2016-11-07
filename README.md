@@ -136,7 +136,7 @@ Loads a single enumerator. This allows bypassing registration if only a single e
 ```csharp
 float progress
 ```
-Between 0 and 1, represents the currently progress of the loading.
+Between 0 and 1, represents the current progress of the loading.
 
 ### Control ###
 
