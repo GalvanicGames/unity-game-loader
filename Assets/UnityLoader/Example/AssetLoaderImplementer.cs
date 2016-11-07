@@ -3,78 +3,75 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityGameLoader;
 
-public class AssetLoaderImplementer : MonoBehaviour, IAssetLoader
+namespace UnityGameLoaderExamples
 {
-	public Image image;
-	public Text text;
-
-	private int _steps;
-
-	private void Start()
+	public class AssetLoaderImplementer : MonoBehaviour, IAssetLoader
 	{
-		image.color = Color.red;
-		text.text = "0";
-	}
+		public Image image;
+		public Text text;
 
-	public IEnumerator LoadAssets()
-	{
-		// We load our assets here and yield at appropriate frame breaks!
-		image.color = Color.red;
-		_steps = 0;
+		private int _steps;
 
-		text.text = _steps.ToString();
-
-		yield return null;
-
-		// We might take quite a bit of time to load stuff, who knows!
-		float timeToLoad = Time.realtimeSinceStartup + Random.value * 2;
-
-		while (Time.realtimeSinceStartup < timeToLoad)
+		private void Start()
 		{
-			// Doing super important load stuff!
-			yield return null;
+			image.color = Color.red;
+			text.text = "0";
 		}
 
-		_steps++;
-		text.text = _steps.ToString();
+		public IEnumerator LoadAssets()
+		{
+			// We load our assets here and yield at appropriate frame breaks!
+			image.color = Color.red;
+			_steps = 0;
 
-		// We can also call other enumerators to let them do their job.
-		yield return LoadOtherAssetsFunction();
+			text.text = _steps.ToString();
 
-		_steps++;
-		text.text = _steps.ToString();
+			yield return null;
 
-		// There's no guarantee that yield will force a frame to pass. Maybe we want to? We can!
-		yield return new ForceYield();
+			// We might take quite a bit of time to load stuff, who knows!
+			float timeToLoad = Time.realtimeSinceStartup + Random.value * 2;
 
-		_steps++;
-		text.text = _steps.ToString();
-	}
+			while (Time.realtimeSinceStartup < timeToLoad)
+			{
+				// Doing super important load stuff!
+				yield return null;
+			}
 
-	private IEnumerator LoadOtherAssetsFunction()
-	{
-		_steps++;
-		text.text = _steps.ToString();
+			_steps++;
+			text.text = _steps.ToString();
 
-		// This can go as deep as we want
-		yield return LoadYetAnotherFunction();
+			// We can also call other enumerators to let them do their job.
+			yield return LoadOtherAssetsFunction();
 
-		// And we'll resume when that enumerator completely finishes!
-		_steps++;
-		text.text = _steps.ToString();
-	}
+			_steps++;
+			text.text = _steps.ToString();
 
-	private IEnumerator LoadYetAnotherFunction()
-	{
-		// Good times.
-		yield return null;
-		_steps++;
-		text.text = _steps.ToString();
-	}
+			// There's no guarantee that yield will force a frame to pass. Maybe we want to? We can!
+			yield return new ForceYield();
 
-	public void AssetsLoaded()
-	{
-		// Any actions that need to happen after everything has been loaded can be placed here!
-		image.color = Color.green;
+			_steps++;
+			text.text = _steps.ToString();
+		}
+
+		private IEnumerator LoadOtherAssetsFunction()
+		{
+			_steps++;
+			text.text = _steps.ToString();
+
+			// This can go as deep as we want
+			yield return LoadYetAnotherFunction();
+
+			// And we'll resume when that enumerator completely finishes!
+			_steps++;
+			text.text = _steps.ToString();
+		}
+
+		private IEnumerator LoadYetAnotherFunction()
+		{
+			// Good times.
+			yield return null;
+			_steps++;
+			text.text = _steps.ToString();
+		}
 	}
 }

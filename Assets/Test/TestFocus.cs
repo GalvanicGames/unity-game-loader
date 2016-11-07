@@ -12,7 +12,7 @@ namespace UnityGameLoaderTests
 		{
 			LoadManager.CreateManager(1f / 30);
 			LoadManager.instance.RegisterObject(gameObject);
-			LoadManager.instance.StartLoading(() => Debug.Log("Loading Complete!"));
+			LoadManager.instance.LoadRegistered(() => Debug.Log("Loading Complete!"));
 		}
 
 		private void OnApplicationFocus(bool focus)
@@ -37,11 +37,6 @@ namespace UnityGameLoaderTests
 
 				yield return null;
 			}
-		}
-
-		public void AssetsLoaded()
-		{
-
 		}
 	}
 }

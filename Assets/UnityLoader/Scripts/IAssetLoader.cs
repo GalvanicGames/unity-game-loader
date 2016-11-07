@@ -11,9 +11,4 @@ public interface IAssetLoader
 	/// </summary>
 	/// <returns></returns>
 	IEnumerator LoadAssets();
-
-	/// <summary>
-	/// The method that will be called once all registered objects have had their assets loaded.
-	/// </summary>
-	void AssetsLoaded();
 }

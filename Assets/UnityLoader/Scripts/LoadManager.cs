@@ -116,7 +116,7 @@ namespace UnityGameLoader
 
 			if (loaderToRegister != null)
 			{
-				_loaders.Add(new LoaderStep(loaderToRegister, additionalSteps));
+				_loaders.Add(new LoaderStep(loaderToRegister.LoadAssets(), additionalSteps));
 			}
 		}
 
@@ -145,10 +145,11 @@ namespace UnityGameLoader
 		}
 
 		/// <summary>
-		/// Begin the loading process. Will set up and invoke the IAssetLoader interface for all registered objects.
+		/// Register a single enumerator.
 		/// </summary>
-		/// <param name="onLoadComplete">Callback to be invoked when loading is complete.</param>
-		public void StartLoading(System.Action onLoadComplete)
+		/// <param name="enumeratorToRegister">The enumerator to register.</param>
+		/// <param name="additionalSteps">The number of steps this enumerator will take to complete.</param>
+		public void RegisterEnumerator(IEnumerator enumeratorToRegister, int additionalSteps = 0)
 		{
 			if (_isLoading)
 			{
@@ -160,9 +161,70 @@ namespace UnityGameLoader
 				return;
 			}
 
+			if (enumeratorToRegister != null)
+			{
+				_loaders.Add(new LoaderStep(enumeratorToRegister, additionalSteps));
+			}
+		}
 
-			// Extra step for calling load complete
-			StartCoroutine(LoadAssetsCo(onLoadComplete));
+		/// <summary>
+		/// Loads all the registered objects and enumerators in the order supplied.
+		/// </summary>
+		/// <param name="onLoadComplete">Callback to be invoked when loading is complete.</param>
+		public void LoadRegistered(System.Action onLoadComplete)
+		{
+			if (_isLoading)
+			{
+				LogWarningFormat(
+					METHOD_INVOKE_DURING_LOADING_WARNING,
+					typeof(LoadManager),
+					System.Reflection.MethodBase.GetCurrentMethod().Name);
+
+				return;
+			}
+
+			int stepsFromLoads = _loaders.Count;
+
+			for (int i = 0; i < _loaders.Count; i++)
+			{
+				stepsFromLoads += _loaders[i].additionalSteps;
+			}
+
+			StartCoroutine(
+				BeginLoading(
+					LoadRegisteredEnumerators(),
+					() =>
+					{
+						_loaders.Clear();
+
+						if (onLoadComplete != null)
+						{
+							onLoadComplete();
+						}
+					}
+					, 
+					stepsFromLoads));
+		}
+
+		/// <summary>
+		/// Load the supplied enumerator. Registered objects will not be cleared and can be registered by the enumerator.
+		/// </summary>
+		/// <param name="enumeratorToLoad">The enumerator to load.</param>
+		/// <param name="onLoadComplete">Function to invoke when loading is complete.</param>
+		/// <param name="additionalSteps">The number of steps this enumerator takes to complete.</param>
+		public void LoadEnumerator(IEnumerator enumeratorToLoad, System.Action onLoadComplete, int additionalSteps)
+		{
+			if (_isLoading)
+			{
+				LogWarningFormat(
+					METHOD_INVOKE_DURING_LOADING_WARNING,
+					typeof(LoadManager),
+					System.Reflection.MethodBase.GetCurrentMethod().Name);
+
+				return;
+			}
+
+			StartCoroutine(BeginLoading(enumeratorToLoad, onLoadComplete, additionalSteps));
 		}
 
 		/// <summary>
@@ -217,10 +279,17 @@ namespace UnityGameLoader
 			}
 
 			StopAllCoroutines();
-			_loaders.Clear();
 			_loadingPaused = false;
 			_isLoading = false;
 			Application.runInBackground = _originalRunInBackground;
+		}
+
+		/// <summary>
+		/// Clears all registered objects.
+		/// </summary>
+		public void ClearRegisteredObjects()
+		{
+			_loaders.Clear();
 		}
 
 		/// <summary>
@@ -259,7 +328,7 @@ namespace UnityGameLoader
 
 		private const int DEFAULT_WEBGL_MEMORY_THRESHOLD = 128000000;
 		private const float NO_FOCUS_SECONDS_PER_FRAME = 1;
-		private const int ADDITIONAL_STEPS = 2;
+		private const int DEFAULT_LOADING_STEPS = 1;
 		private const string LOG_HEADER = "[Unity Loader]";
 		private const string CREATED_NAME = "[Unity Loader]";
 		private const string METHOD_INVOKE_DURING_LOADING_WARNING = "{0}.{1} invoked in the middle of a load! This isn't allowed. Invoke after the load finishes.";
@@ -267,13 +336,13 @@ namespace UnityGameLoader
 
 		private struct LoaderStep
 		{
-			public IAssetLoader loader;
+			public IEnumerator enumerator;
 			public int additionalSteps;
 
-			public LoaderStep(IAssetLoader loader, int additionalSteps)
+			public LoaderStep(IEnumerator enumerator, int additionalSteps)
 			{
-				this.loader = loader;
 				this.additionalSteps = additionalSteps;
+				this.enumerator = enumerator;
 			}
 		}
 
@@ -308,80 +377,81 @@ namespace UnityGameLoader
 			_hasFocus = focus;
 		}
 
-		private IEnumerator LoadAssetsCo(System.Action onLoadComplete)
+		private IEnumerator BeginLoading(IEnumerator enumToLoad, System.Action onLoadComplete, int additionalSteps)
 		{
+			_currentStep = 0;
+			_totalSteps = DEFAULT_LOADING_STEPS + additionalSteps;
+			_isLoading = true;
+			float enumLoadTimeStart = Time.realtimeSinceStartup;
+
 			_originalRunInBackground = Application.runInBackground;
 			Application.runInBackground = true;
-			float setupTimeStart = Time.realtimeSinceStartup;
+
 			float frameStartTime = Time.realtimeSinceStartup;
-			_isLoading = true;
-			_currentStep = 0;
-
-			// We consider the set up an additional step as well invoking asset load complete a step.
-			_totalSteps = _loaders.Count + ADDITIONAL_STEPS;
-
-			for (int i = 0; i < _loaders.Count; i++)
-			{
-				_totalSteps += _loaders[i].additionalSteps;
-			}
-
-			if (verboseLogging)
-			{
-				LogFormat("Setup - Time: {0}", Time.realtimeSinceStartup - setupTimeStart);
-			}
-
-			if (ShouldYield(frameStartTime))
-			{
-				yield return null;
-				frameStartTime = Time.realtimeSinceStartup;
-			}
-
-			IncrementLoadStep();
 			Stack<IEnumerator> enumerators = new Stack<IEnumerator>();
+			enumerators.Push(enumToLoad);
 
-			for (int i = 0; i < _loaders.Count; i++)
+			while (enumerators.Count > 0)
 			{
-				enumerators.Clear();
-				enumerators.Push(_loaders[i].loader.LoadAssets());
-				int preEnumSteps = _currentStep;
-
-				float assetLoadTimeStart = Time.realtimeSinceStartup;
-
-				while (enumerators.Count > 0)
+				if (_loadingPaused)
 				{
-					if (_loadingPaused)
+					yield return null;
+					continue;
+				}
+
+				bool forceYield = false;
+				IEnumerator currentEnumerator = enumerators.Peek();
+
+				if (currentEnumerator.MoveNext())
+				{
+					IEnumerator yieldEnum = currentEnumerator.Current as IEnumerator;
+
+					if (yieldEnum != null)
 					{
-						yield return null;
-						continue;
-					}
-
-					bool forceYield = false;
-					IEnumerator currentEnumerator = enumerators.Peek();
-
-					if (currentEnumerator.MoveNext())
-					{
-						IEnumerator yieldEnum = currentEnumerator.Current as IEnumerator;
-
-						if (yieldEnum != null)
-						{
-							enumerators.Push(yieldEnum);
-						}
-						else
-						{
-							forceYield = currentEnumerator.Current is ForceYield;
-						}
+						enumerators.Push(yieldEnum);
 					}
 					else
 					{
-						enumerators.Pop();
-					}
-
-					if (forceYield || ShouldYield(frameStartTime))
-					{
-						yield return null;
-						frameStartTime = Time.realtimeSinceStartup;
+						forceYield = currentEnumerator.Current is ForceYield;
 					}
 				}
+				else
+				{
+					enumerators.Pop();
+				}
+
+				if (forceYield || ShouldYield(frameStartTime))
+				{
+					yield return null;
+					frameStartTime = Time.realtimeSinceStartup;
+				}
+			}
+
+			IncrementLoadStep();
+
+			_loadingPaused = false;
+			_isLoading = false;
+			Application.runInBackground = _originalRunInBackground;
+
+			if (verboseLogging)
+			{
+				LogFormat("Total {0} load time: {1}", enumToLoad, Time.realtimeSinceStartup - enumLoadTimeStart);
+			}
+
+			if (onLoadComplete != null)
+			{
+				onLoadComplete();
+			}
+		}
+
+		private IEnumerator LoadRegisteredEnumerators()
+		{
+			for (int i = 0; i < _loaders.Count; i++)
+			{
+				int preEnumSteps = _currentStep;
+				float assetLoadTimeStart = Time.realtimeSinceStartup;
+
+				yield return _loaders[i].enumerator;
 
 				if (_currentStep - preEnumSteps != _loaders[i].additionalSteps)
 				{
@@ -396,45 +466,9 @@ namespace UnityGameLoader
 
 				if (verboseLogging)
 				{
-					LogFormat("Loading {0} - Time: {1}", _loaders[i].loader, Time.realtimeSinceStartup - assetLoadTimeStart);
+					LogFormat("Loading {0} - Time: {1}", _loaders[i].enumerator, Time.realtimeSinceStartup - assetLoadTimeStart);
 				}
 			}
-
-			for (int i = 0; i < _loaders.Count; i++)
-			{
-				if (_loadingPaused)
-				{
-					yield return null;
-					i--;
-					continue;
-				}
-
-				float loadedTimeStart = Time.realtimeSinceStartup;
-				_loaders[i].loader.AssetsLoaded();
-
-				if (verboseLogging)
-				{
-					LogFormat("Loaded {0} - Time: {1}", _loaders[i].loader, Time.realtimeSinceStartup - loadedTimeStart);
-				}
-
-				if (ShouldYield(frameStartTime))
-				{
-					yield return null;
-					frameStartTime = Time.realtimeSinceStartup;
-				}
-			}
-
-			IncrementLoadStep();
-
-			if (onLoadComplete != null)
-			{
-				onLoadComplete();
-			}
-
-			_loaders.Clear();
-			_loadingPaused = false;
-			_isLoading = false;
-			Application.runInBackground = _originalRunInBackground;
 		}
 
 		private bool ShouldYield(float frameStartTime)

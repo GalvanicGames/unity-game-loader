@@ -32,18 +32,13 @@ namespace UnityGameLoaderTests
 
 				yield return null;
 			}
-
-			public void AssetsLoaded()
-			{
-
-			}
 		}
 
 		public void TestCorrectSteps()
 		{
 			TestCorrectStepsClass test = new TestCorrectStepsClass();
 			LoadManager.instance.RegisterObject(test, STEPS_USED);
-			LoadManager.instance.StartLoading(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
+			LoadManager.instance.LoadRegistered(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
 		}
 
 		//
@@ -60,16 +55,11 @@ namespace UnityGameLoaderTests
 					{
 						LoadManager.instance.IncrementLoadStep();
 					}
-					
+
 					yield return null;
 				}
 
 				yield return null;
-			}
-
-			public void AssetsLoaded()
-			{
-
 			}
 		}
 
@@ -77,7 +67,7 @@ namespace UnityGameLoaderTests
 		{
 			TestTooFewStepsClass test = new TestTooFewStepsClass();
 			LoadManager.instance.RegisterObject(test, STEPS_USED);
-			LoadManager.instance.StartLoading(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
+			LoadManager.instance.LoadRegistered(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
 		}
 
 		//
@@ -97,18 +87,13 @@ namespace UnityGameLoaderTests
 				LoadManager.instance.IncrementLoadStep();
 				yield return null;
 			}
-
-			public void AssetsLoaded()
-			{
-
-			}
 		}
 
 		public void TestTooManySteps()
 		{
 			TestTooManyStepsClass test = new TestTooManyStepsClass();
 			LoadManager.instance.RegisterObject(test, STEPS_USED);
-			LoadManager.instance.StartLoading(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
+			LoadManager.instance.LoadRegistered(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
 		}
 
 		//
@@ -127,11 +112,6 @@ namespace UnityGameLoaderTests
 					yield return new ForceYield();
 				}
 			}
-
-			public void AssetsLoaded()
-			{
-
-			}
 		}
 
 		public void TestForceYield()
@@ -139,7 +119,7 @@ namespace UnityGameLoaderTests
 			TestForceYieldClass test = new TestForceYieldClass();
 			LoadManager.instance.secondsAllowedPerFrame = 100;
 			LoadManager.instance.RegisterObject(test);
-			LoadManager.instance.StartLoading(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
+			LoadManager.instance.LoadRegistered(() => Assert.IsTrue(LoadManager.instance.progress == 1f));
 		}
 	}
 }

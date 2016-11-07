@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityGameLoader;
 
 namespace UnityGameLoaderExamples
 {
-	public class InteractWithLoadManager : MonoBehaviour
+	public class InteractWithLoadManagerExample : MonoBehaviour
 	{
 		public Image loadProgress;
 		public Text loadState;
@@ -14,7 +15,12 @@ namespace UnityGameLoaderExamples
 		public Button pauseResumeButton;
 		public Text pauseResumeText;
 
+		public Text enumText;
+
 		private LoadState _state;
+		private bool _runRegisteredObjs = true;
+
+		private const int STEPS_FOR_ENUMERATOR = 11;
 
 		private enum LoadState
 		{
@@ -56,8 +62,21 @@ namespace UnityGameLoaderExamples
 			}
 			else
 			{
-				LoadManager.instance.RegisterObjectDeep(gameObject);
-				LoadManager.instance.StartLoading(OnLoadComplete);
+				if (_runRegisteredObjs)
+				{
+					LoadManager.instance.RegisterEnumerator(EnumeratorToLoad(), STEPS_FOR_ENUMERATOR);
+					LoadManager.instance.RegisterObjectDeep(gameObject);
+
+					// Can load all the registered objects
+					LoadManager.instance.LoadRegistered(OnLoadComplete);
+				}
+				else
+				{
+					// Or we can load arbitrary enumerators where we step the progress counter ourselves. In this case
+					// we know we'll run 11 steps (incremented in the enumerator)
+					LoadManager.instance.LoadEnumerator(EnumeratorToLoad(), OnLoadComplete, STEPS_FOR_ENUMERATOR);
+				}
+
 				loadState.text = "Loading...";
 				pauseResumeButton.gameObject.SetActive(true);
 				loadCancelText.text = "Cancel";
@@ -84,6 +103,11 @@ namespace UnityGameLoaderExamples
 			}
 		}
 
+		public void LoadTypeChanged(bool runRegObjs)
+		{
+			_runRegisteredObjs = runRegObjs;
+		}
+
 		private void OnLoadComplete()
 		{
 			loadProgress.fillAmount = LoadManager.instance.progress;
@@ -91,6 +115,44 @@ namespace UnityGameLoaderExamples
 			loadCancelText.text = "Load";
 			loadState.text = "Load Complete!";
 			pauseResumeButton.gameObject.SetActive(false);
+		}
+
+		private IEnumerator EnumeratorToLoad()
+		{
+			enumText.color = Color.red;
+
+			for (int i = 0; i < 10; i++)
+			{
+				float runUntil = Time.realtimeSinceStartup + 1;
+				enumText.text = i.ToString();
+
+                while (Time.realtimeSinceStartup < runUntil)
+				{
+					yield return null;
+				}
+
+				LoadManager.instance.IncrementLoadStep();
+			}
+
+			enumText.text = "10";
+
+			// Can call into other enumerators
+			yield return SpinForSecond();
+
+			enumText.text = "Complete!";
+			enumText.color = Color.green;
+		}
+
+		private IEnumerator SpinForSecond()
+		{
+			float runUntil = Time.realtimeSinceStartup + 1;
+
+			while (Time.realtimeSinceStartup < runUntil)
+			{
+				yield return null;
+			}
+
+			LoadManager.instance.IncrementLoadStep();
 		}
 	}
 }
