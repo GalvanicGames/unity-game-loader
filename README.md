@@ -42,7 +42,7 @@ static LoadManager instance
 
 The load manager works by taking enumerators and advancing them automatically if the frame doesn't need to yield yet and yielding to the next frame when appropriate.
 
-When implementing a loading enumerator, use 'yield return null' to indicate that a frame could yield here if it is need (a good place would be to place a 'yield return null' between objects that are created). A loading enumerator can also yield another enumerator which will then be loaded.
+When implementing a loading enumerator, use 'yield return null' to indicate that a frame could yield here if it is needed (a good place would be to place a 'yield return null' between objects that are created). A loading enumerator can also yield another enumerator which will then be loaded.
 
 **Example**
 
