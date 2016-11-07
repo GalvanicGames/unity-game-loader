@@ -285,9 +285,9 @@ namespace UnityGameLoader
 		}
 
 		/// <summary>
-		/// Clears all registered objects.
+		/// Clears all registered GameObjects and enumerators.
 		/// </summary>
-		public void ClearRegisteredObjects()
+		public void ClearRegistration()
 		{
 			_loaders.Clear();
 		}
