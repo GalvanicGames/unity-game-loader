@@ -124,7 +124,7 @@ Once the known enumerators and GameObjects have been registered with the Load Ma
 ```csharp
 void LoadRegistered(System.Action onLoadComplete)
 ```
-Loads the registered enumerator and GameObjects in the order they were received and invokes onLoadComplete once loading has finished. Further registration is disabled until loading has been canceled or completed.
+Loads the registered enumerators and GameObjects in the order they were received and invokes onLoadComplete once loading has finished. Further registration is disabled until loading has been canceled or completed.
 
 ```csharp
 void LoadEnumerator(IEnumerator enumeratorToLoad, System.Action onLoadComplete, int additionalSteps)
