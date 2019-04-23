@@ -52,3 +52,5 @@ AutoSaver.meta
 out/
 logs/
 build-process/
+Assets/Plugins/Editor/JetBrains/*
+.idea/*

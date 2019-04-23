@@ -1,7 +1,10 @@
 ﻿using System.Collections;
 using UnityEngine;
 using System.Collections.Generic;
+
+#if UNITY_WEBGL
 using System.Runtime.InteropServices;
+#endif
 
 namespace UnityGameLoader
 {
@@ -11,6 +14,7 @@ namespace UnityGameLoader
 	public class LoadManager : MonoBehaviour
 	{
 		#region public
+
 		/// <summary>
 		/// The amount of time the loader will execute before yield to a new frame.
 		/// </summary>
@@ -33,7 +37,7 @@ namespace UnityGameLoader
 		/// </summary>
 		public float progress
 		{
-			get { return (float)_currentStep / _totalSteps; }
+			get { return (float) _currentStep / _totalSteps; }
 		}
 
 		/// <summary>
@@ -52,7 +56,7 @@ namespace UnityGameLoader
 						LogErrorFormat(
 							"No instance of {0} can be found! Add the {0} component to a GameObject or invoke {0}.{1}().",
 							typeof(LoadManager),
-							((System.Action<float, int, bool>)CreateManager).Method.Name);
+							((System.Action<float, int, bool>) CreateManager).Method.Name);
 					}
 				}
 
@@ -202,7 +206,7 @@ namespace UnityGameLoader
 							onLoadComplete();
 						}
 					}
-					, 
+					,
 					stepsFromLoads));
 		}
 
@@ -311,6 +315,7 @@ namespace UnityGameLoader
 		}
 
 		#endregion
+
 		#region private
 
 		private int _totalSteps;
@@ -331,8 +336,12 @@ namespace UnityGameLoader
 		private const int DEFAULT_LOADING_STEPS = 1;
 		private const string LOG_HEADER = "[Unity Loader]";
 		private const string CREATED_NAME = "[Unity Loader]";
-		private const string METHOD_INVOKE_DURING_LOADING_WARNING = "{0}.{1} invoked in the middle of a load! This isn't allowed. Invoke after the load finishes.";
-		private const string METHOD_INVOKE_NOT_LOADING_WARNING = "{0}.{1} invoked when not loading! This will be ignored.";
+
+		private const string METHOD_INVOKE_DURING_LOADING_WARNING =
+			"{0}.{1} invoked in the middle of a load! This isn't allowed. Invoke after the load finishes.";
+
+		private const string METHOD_INVOKE_NOT_LOADING_WARNING =
+			"{0}.{1} invoked when not loading! This will be ignored.";
 
 		private struct LoaderStep
 		{
@@ -346,12 +355,13 @@ namespace UnityGameLoader
 			}
 		}
 
+#if UNITY_WEBGL
 		[DllImport("__Internal", EntryPoint = "ulInitialize")]
 		private static extern void JSInitialize();
 
 		[DllImport("__Internal", EntryPoint = "ulIsTabActive")]
 		private static extern bool JSIsTabActive();
-
+#endif
 		private void Awake()
 		{
 			if (_instance != null)
@@ -365,11 +375,13 @@ namespace UnityGameLoader
 
 			_instance = this;
 
-			if (Application.platform == RuntimePlatform.WebGLPlayer && !Application.isEditor && !_webglInitialized)
+#if UNITY_WEBGL
+			if (!Application.isEditor && !_webglInitialized)
 			{
 				JSInitialize();
 				_webglInitialized = true;
 			}
+#endif
 		}
 
 		private void OnApplicationFocus(bool focus)
@@ -457,7 +469,7 @@ namespace UnityGameLoader
 				{
 					LogWarningFormat(
 						"Progress step count mismatch! Expecting {0} to be invoked the same number supplied during registration! Fixing.",
-						((System.Action)IncrementLoadStep).Method.Name);
+						((System.Action) IncrementLoadStep).Method.Name);
 
 					_currentStep = preEnumSteps + _loaders[i].additionalSteps;
 				}
@@ -466,15 +478,15 @@ namespace UnityGameLoader
 
 				if (verboseLogging)
 				{
-					LogFormat("Loading {0} - Time: {1}", _loaders[i].enumerator, Time.realtimeSinceStartup - assetLoadTimeStart);
+					LogFormat("Loading {0} - Time: {1}", _loaders[i].enumerator,
+						Time.realtimeSinceStartup - assetLoadTimeStart);
 				}
 			}
 		}
 
 		private bool ShouldYield(float frameStartTime)
 		{
-			if (Application.platform == RuntimePlatform.WebGLPlayer)
-			{
+#if UNITY_WEBGL
 				if (!Application.isEditor)
 				{
 					if (System.GC.GetTotalMemory(false) > memoryThresholdForYield)
@@ -492,20 +504,18 @@ namespace UnityGameLoader
 						return false;
 					}
 				}
-			}
-			else
+#else
+			if (!Application.isEditor && !_hasFocus)
 			{
-				if (!Application.isEditor && !_hasFocus)
+				if (Time.realtimeSinceStartup - frameStartTime >= NO_FOCUS_SECONDS_PER_FRAME)
 				{
-					if (Time.realtimeSinceStartup - frameStartTime >= NO_FOCUS_SECONDS_PER_FRAME)
-					{
-						return true;
-					}
-
-					// We don't have focus, go nuts.
-					return false;
+					return true;
 				}
+
+				// We don't have focus, go nuts.
+				return false;
 			}
+#endif
 
 			if ((Time.realtimeSinceStartup - frameStartTime) >= secondsAllowedPerFrame)
 			{
